@@ -3,6 +3,8 @@ use strict;
 use warnings FATAL => 'all';
 $| = 1;
 
+# All possible combinations of a string of characters
+
 my $string = shift;
 chomp $string;
 my @chars = split(//, $string);
