@@ -1,0 +1,19 @@
+[
+  [["name", "str"], ["food", "str"]],
+  ["New York",  "hot dog"],
+  ["Los Angeles",  "CPK"],
+  ["Chicago", "deep dish pizza"],
+  ["Houston",  "BBQ"],
+  ["Washington DC", "kettle chips"],
+  ["Toronto",  "syrup"],
+  ["Montreal", "poutin"],
+  ["Calgary",  "bison"],
+  ["Ottawa",  "blubber"],
+  ["Mumbai",  "tika masala"],
+  ["Delhi",  "biryani"],
+  ["Bangalore", "samosa"],
+  ["Tokyo", "nigiri"],
+  ["Kanagawa",  "sashimi"],
+  ["Osaka",  "octopus"],
+  ["Aichi","fugu"]
+]
