@@ -23,7 +23,6 @@ def __process_dict__(dict_name, keys, required, optional):
 
 
 class Table:
-
     def __init__(self):
         self.name = None
         self.fields = []
@@ -149,7 +148,6 @@ class Where:
 
 
 class Term:
-
     def __init__(self, term):
         self.type = None
         self.value = None
@@ -172,7 +170,6 @@ class Term:
 
 
 class QueryColumn:
-
     def __init__(self, label, field, table):
         self.label = label
         self.field = field
@@ -247,8 +244,8 @@ def _validation_(tables, selectors):
     for selector in selectors:
         table_count = 0
         # for key, data in fields.iteritems():
-            # if selector.resolved_reference() in map(lambda x: x[0], fields[key]):
-            #     table_count += 1
+        # if selector.resolved_reference() in map(lambda x: x[0], fields[key]):
+        #     table_count += 1
         if table_count > 1:
             print 'Ambiguous column: ' + selector.resolved_reference()
             exit(255)
@@ -323,23 +320,24 @@ def _filter_data_(tables, filters):
             table = _find_table_(fltr.left.value.name)
         else:
             table = fltr.left.value.table
-    index = _find_index_(table, fltr.left.value.name)
-    if fltr.op == '>':
-        filtered_rows = filter(lambda x: x[index] > fltr.right.value, f_data[table])
-    elif fltr.op == '>=':
-        filtered_rows = filter(lambda x: x[index] >= fltr.right.value, f_data[table])
-    elif fltr.op == '=':
-        filtered_rows = filter(lambda x: x[index] == fltr.right.value, f_data[table])
-    elif fltr.op == '<':
-        filtered_rows = filter(lambda x: x[index] < fltr.right.value, f_data[table])
-    elif fltr.op == '<=':
-        filtered_rows = filter(lambda x: x[index] <= fltr.right.value, f_data[table])
-    f_data[table] = filtered_rows
+        index = _find_index_(table, fltr.left.value.name)
+        data_source = f_data[table][:] if table in f_data else f_data[table]
+        if fltr.op == '>':
+            filtered_rows = filter(lambda x: x[index] > fltr.right.value, data_source)
+        elif fltr.op == '>=':
+            filtered_rows = filter(lambda x: x[index] >= fltr.right.value, data_source)
+        elif fltr.op == '=':
+            filtered_rows = filter(lambda x: x[index] == fltr.right.value, data_source)
+        elif fltr.op == '<':
+            filtered_rows = filter(lambda x: x[index] < fltr.right.value, data_source)
+        elif fltr.op == '<=':
+            filtered_rows = filter(lambda x: x[index] <= fltr.right.value, data_source)
+        f_data[table] = filtered_rows
     return f_data
 
 
 ## data is the previously generated data which will be re-matched by row number
-def __join_data__(join, data=None):
+def __join_data__(join, filtered_data, data=None):
     if data is not None:
         rejoin_tables = []
         for t in tables.keys():
@@ -403,30 +401,33 @@ def __join_data__(join, data=None):
     return all_joined_rows
 
 
-def _join_data_(joins):
+def _join_data_(joins, filtered_data):
     all_joined_rows = {}
 
-    for index, join in enumerate(joins):
-        if len(all_joined_rows.keys()) == 0:
-            data = None
-        else:
-            data = all_joined_rows
-        for table, results in __join_data__(join, data).iteritems():
-            all_joined_rows[table] = results
+    if len(joins) == 0:
+        return filtered_data
+    else:
+        for index, join in enumerate(joins):
+            if len(all_joined_rows.keys()) == 0:
+                joined_data = None
+            else:
+                joined_data = all_joined_rows
+            for table, results in __join_data__(join, filtered_data, joined_data).iteritems():
+                all_joined_rows[table] = results
 
-    return all_joined_rows
+        return all_joined_rows
 
 
-def _pivot_results_(results):
-    filtered_and_joined = []
-    for i in range(len(results.values()[0])):
+def _pivot_results_(fj_data):
+    results = []
+    for i in range(len(fj_data.values()[0])):
         row = []
         headers = []
         for qc in query_columns:
             headers.append(qc.label)
-            row.append(results[qc.table][i][_find_index_(qc.table, qc.field)])
-        filtered_and_joined.append(row)
-    return (headers, filtered_and_joined)
+            row.append(fj_data[qc.table][i][_find_index_(qc.table, qc.field)])
+        results.append(row)
+    return (headers, results)
 
 
 def _output_(headers, data):
@@ -446,8 +447,7 @@ query_columns = _construct_query_columns_(selectors)
 select_data = _select_columns_(query_columns)
 (joins, filters) = _detect_joins_and_filters_(wheres)
 filtered_data = _filter_data_(tables, filters)
-results = _join_data_(joins)
+filtered_and_joined_data = _join_data_(joins, filtered_data)
+headers, results = _pivot_results_(filtered_and_joined_data)
 
-headers, filtered_and_joined = _pivot_results_(results)
-
-_output_(headers, filtered_and_joined)
+_output_(headers, results)
