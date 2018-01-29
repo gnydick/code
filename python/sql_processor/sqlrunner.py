@@ -48,7 +48,7 @@ class Selector:
 
         source = selector['source']
         self.source = SelectorSource(source)
-        self.az = None if 'as' not in source.keys() else source['as']
+        self.az = None if 'as' not in selector.keys() else selector['as']
 
     def fqn(self):
         return self.source.column.name if self.source.column.table is None else self.source.column.table + '.' + self.source.column.name
@@ -173,11 +173,10 @@ class Term:
 
 class QueryColumn:
 
-    def __init__(self, label, field, table, index):
+    def __init__(self, label, field, table):
         self.label = label
         self.field = field
         self.table = table
-        self.index = index
 
 
 def _load_selectors_(selectors):
@@ -247,9 +246,9 @@ def _validation_(tables, selectors):
 
     for selector in selectors:
         table_count = 0
-        for key, data in fields.iteritems():
-            if selector.resolved_reference() in map(lambda x: x[0], fields[key]):
-                table_count += 1
+        # for key, data in fields.iteritems():
+            # if selector.resolved_reference() in map(lambda x: x[0], fields[key]):
+            #     table_count += 1
         if table_count > 1:
             print 'Ambiguous column: ' + selector.resolved_reference()
             exit(255)
@@ -291,7 +290,7 @@ def _construct_query_columns_(selectors):
     for selector in selectors:
         field = selector.source.column.name
         table = _find_table_(selector.fqn())
-        qc = QueryColumn(selector.resolved_reference(), field, table, 0)
+        qc = QueryColumn(selector.resolved_reference(), field, table)
         qcs.append(qc)
     return qcs
 
@@ -364,10 +363,7 @@ def __join_data__(join, data=None):
 
     # copy rows to transient data sources
     if data is None:
-        if ltable_name in all_joined_rows:
-            ldata_source = all_joined_rows[ltable_name][:]
-        else:
-            ldata_source = filtered_data[ltable_name][:]
+        ldata_source = filtered_data[ltable_name][:]
     else:
         ldata_source = data[ltable_name][:]
 
@@ -381,7 +377,7 @@ def __join_data__(join, data=None):
     all_joined_rows[ltable_name] = []
 
     # lambda functions handle 1-to-many join
-    for index, lrow in enumerate(ldata_source):
+    for row_number, lrow in enumerate(ldata_source):
         if join.op == '>':
             joined_rows = filter(lambda x: lrow[lindex] > x[rindex], rdata_source)
         elif join.op == '>=':
@@ -398,7 +394,7 @@ def __join_data__(join, data=None):
                     for table in rejoin_tables:
                         if table not in all_joined_rows:
                             all_joined_rows[table] = []
-                        all_joined_rows[table].append(data[table][index])
+                        all_joined_rows[table].append(data[table][row_number])
                 all_joined_rows[rtable_name].append(rrow)
 
                 # create a left entry for every right entry to handle 1-to-many
